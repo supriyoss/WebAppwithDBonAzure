@@ -79,20 +79,13 @@ stages:
         command: 'plan'
         workingDirectory: 'infra'
         backendServiceArm: 'azure-sp'
-        backendAzureRmResourceGroupName: 'techish-webapp-rg'
-        backendAzureRmStorageAccountName: 'techish-tf-storage'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'techishprod.tfstate'
+        environmentServiceNameAzureRM: 'azure-sp'
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'
         command: 'apply'
         workingDirectory: 'infra'
-        backendServiceArm: 'azure-sp'
-        backendAzureRmResourceGroupName: 'techish-webapp-rg'
-        backendAzureRmStorageAccountName: 'techish-tf-storage'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'techishprod.tfstate'
+        environmentServiceNameAzureRM: 'azure-sp'
 
 - stage: Database
   dependsOn: Infrastructure
