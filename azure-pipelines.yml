@@ -79,10 +79,10 @@ stages:
       workingDirectory: webapp
     - script: node -e "console.log('##vso[task.setvariable variable=sonarProjectKey]' + require('crypto').randomUUID())"
       displayName: 'Generate Sonar Project GUID'
-    - task: SonarCloudPrepare@1
+    - task: SonarCloudPrepare@4
       inputs:
-        SonarCloud: 'your-sonarcloud-service-connection'
-        organization: 'your-org'
+        SonarCloud: 'sonar-connection'
+        organization: 'techishprod'
         projectKey: $(sonarProjectKey)
         projectName: 'WebApp'
         extraProperties: |
@@ -101,11 +101,11 @@ stages:
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/webapp.zip'
       displayName: 'Archive WebApp'
-    - task: SonarCloudAnalyze@1
+    - task: SonarCloudAnalyze@4
       displayName: 'Run SonarCloud analysis'
     - task: SonarCloudPublishQualityGateResult@1
       displayName: 'Publish Quality Gate Result'
-    - task: PublishBuildArtifacts@1
+    - task: PublishBuildArtifacts@4
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
         ArtifactName: 'webapp'
