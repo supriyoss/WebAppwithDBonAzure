@@ -5,11 +5,11 @@ pool:
 
 variables:
   webAppName: 'webapp-$(Build.BuildId)'
-  resourceGroupName: 'webapp-rg'
+  resourceGroupName: 'techish-webapp-rg'
   location: 'East US'
   postgresServerName: 'webapp-postgres'
   databaseName: 'webappdb'
-  adminUsername: 'postgresadmin'
+  adminUsername: $(adminUsername)
   adminPassword: '$(adminPassword)'  # Set in pipeline variables
 
 stages:
@@ -64,7 +64,7 @@ stages:
     steps:
     - task: AzureCLI@2
       inputs:
-        azureSubscription: 'your-subscription'  # Set service connection
+        azureSubscription: 'azure-sp'  # Set service connection
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
