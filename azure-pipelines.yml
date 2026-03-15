@@ -68,17 +68,11 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: 'infra'
-        backendServiceArm: 'azure-sp'
-        backendAzureRmResourceGroupName: 'techish-webapp-rg'
-        backendAzureRmStorageAccountName: 'techish-tf-storage'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'techishprod.tfstate'
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'
         command: 'plan'
         workingDirectory: 'infra'
-        backendServiceArm: 'azure-sp'
         environmentServiceNameAzureRM: 'azure-sp'
         commandOptions: '-input=false -var="admin_password=$(adminPassword)"'
         runAzLogin: true
@@ -87,7 +81,6 @@ stages:
         provider: 'azurerm'
         command: 'apply'
         workingDirectory: 'infra'
-        backendServiceArm: 'azure-sp'
         environmentServiceNameAzureRM: 'azure-sp'
         commandOptions: '-input=false -var="admin_password=$(adminPassword)"'
 
