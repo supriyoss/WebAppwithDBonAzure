@@ -46,16 +46,22 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: 'infra'
+        backendServiceArm: 'azure-sp'
+        backendAzureRmResourceGroupName: 'techish-webapp-rg'
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'
         command: 'plan'
         workingDirectory: 'infra'
+        backendServiceArm: 'azure-sp'
+        backendAzureRmResourceGroupName: 'techish-webapp-rg'
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'
         command: 'apply'
         workingDirectory: 'infra'
+        backendServiceArm: 'azure-sp'
+        backendAzureRmResourceGroupName: 'techish-webapp-rg'
 
 - stage: Database
   dependsOn: Infrastructure
