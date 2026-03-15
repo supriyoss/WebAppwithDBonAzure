@@ -9,6 +9,9 @@ terraform {
 
 provider "azurerm" {
   features {}
+
+  use_msi = true
+  client_id = "76e728f9-d2c0-472b-9dbb-24798b466fd4"
 }
 
 resource "azurerm_resource_group" "rg" {
