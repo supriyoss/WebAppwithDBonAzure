@@ -81,11 +81,13 @@ stages:
         backendServiceArm: 'azure-sp'
         environmentServiceNameAzureRM: 'azure-sp'
         commandOptions: '-input=false -var="admin_password=$(adminPassword)"'
+        runAzLogin: true
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'
         command: 'apply'
         workingDirectory: 'infra'
+        backendServiceArm: 'azure-sp'
         environmentServiceNameAzureRM: 'azure-sp'
 
 - stage: Database
