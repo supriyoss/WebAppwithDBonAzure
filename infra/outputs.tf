@@ -1,4 +1,4 @@
 output "database_connection_string" {
-  value = "postgresql://${var.admin_username}@${azurerm_postgresql_server.postgres.name}.postgres.database.azure.com:5432/${var.database_name}?sslmode=require"
+  value = "postgresql://${var.admin_username}:${var.admin_password}@${azurerm_postgresql_flexible_server.postgres.fqdn}:5432/${var.database_name}?sslmode=require"
   sensitive = true
 }
