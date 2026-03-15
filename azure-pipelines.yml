@@ -1,0 +1,122 @@
+trigger: none
+
+pool:
+  name: 'Default'
+
+variables:
+  webAppName: 'webapp-$(Build.BuildId)'
+  resourceGroupName: 'webapp-rg'
+  location: 'East US'
+  postgresServerName: 'webapp-postgres'
+  databaseName: 'webappdb'
+  adminUsername: 'postgresadmin'
+  adminPassword: '$(adminPassword)'  # Set in pipeline variables
+
+stages:
+- stage: Infrastructure
+  jobs:
+  - job: DeployInfra
+    steps:
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: '1.0.0'
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: 'infra'
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: 'infra'
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: 'infra'
+
+- stage: Database
+  dependsOn: Infrastructure
+  jobs:
+  - job: SetupDB
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'your-subscription'  # Set service connection
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          psql "host=$(postgresServerName).postgres.database.azure.com port=5432 dbname=$(databaseName) user=$(adminUsername)@$(postgresServerName) password=$(adminPassword) sslmode=require" -f db/schema.sql
+
+- stage: WebApp
+  dependsOn: Database
+  jobs:
+  - job: DeployWebApp
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+    - script: npm install
+      workingDirectory: webapp
+    - script: node -e "console.log('##vso[task.setvariable variable=sonarProjectKey]' + require('crypto').randomUUID())"
+      displayName: 'Generate Sonar Project GUID'
+    - task: SonarCloudPrepare@1
+      inputs:
+        SonarCloud: 'your-sonarcloud-service-connection'
+        organization: 'your-org'
+        projectKey: $(sonarProjectKey)
+        projectName: 'WebApp'
+        extraProperties: |
+          sonar.sources=webapp
+          sonar.tests=webapp
+          sonar.test.inclusions=**/*.test.js
+          sonar.javascript.lcov.reportPaths=webapp/coverage/lcov.info
+      displayName: 'Prepare SonarCloud analysis'
+    - script: npm test
+      workingDirectory: webapp
+      displayName: 'Run Unit Tests'
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: 'webapp'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/webapp.zip'
+      displayName: 'Archive WebApp'
+    - task: SonarCloudAnalyze@1
+      displayName: 'Run SonarCloud analysis'
+    - task: SonarCloudPublishQualityGateResult@1
+      displayName: 'Publish Quality Gate Result'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'webapp'
+        publishLocation: 'Container'
+      condition: eq(variables['SonarCloudQualityGatePassed'], 'True')
+      displayName: 'Publish Artifact'
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'your-subscription'
+        appType: 'webAppLinux'
+        appName: $(webAppName)
+        package: '$(Build.ArtifactStagingDirectory)/webapp.zip'
+        runtimeStack: 'NODE|18-lts'
+        appSettings: |
+          DATABASE_URL=postgresql://$(adminUsername)@$(postgresServerName):$(adminPassword)@$(postgresServerName).postgres.database.azure.com:5432/$(databaseName)?sslmode=require
+      condition: eq(variables['SonarCloudQualityGatePassed'], 'True')
+      displayName: 'Deploy to Azure Web App'
+
+- stage: Selenium
+  dependsOn: WebApp
+  jobs:
+  - job: RunTests
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+    - script: npm install
+      workingDirectory: tests
+    - script: npm test
+      workingDirectory: tests
+      env:
+        APP_URL: 'https://$(webAppName).azurewebsites.net'
