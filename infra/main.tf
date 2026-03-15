@@ -18,7 +18,7 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
-resource "azurerm_postgresql_server" "postgres" {
+resource "azurerm_postgresql_flexible_server" "postgres" {
   name                = var.postgres_server_name
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -26,11 +26,10 @@ resource "azurerm_postgresql_server" "postgres" {
   storage_mb          = 5120
   backup_retention_days = 7
   geo_redundant_backup_enabled = false
-  auto_grow_enabled            = true
+  auto_grow_enabled            = false
   administrator_login          = var.admin_username
-  administrator_login_password = var.admin_password
-  version                      = "11"
-  ssl_enforcement_enabled      = true
+  administrator_password = var.admin_password
+  version                      = "17"
 }
 
 resource "azurerm_postgresql_database" "db" {
@@ -38,5 +37,5 @@ resource "azurerm_postgresql_database" "db" {
   resource_group_name = azurerm_resource_group.rg.name
   server_name         = azurerm_postgresql_server.postgres.name
   charset             = "UTF8"
-  collation           = "English_United States.1252"
+  collation           = "en_US.utf8"
 }
