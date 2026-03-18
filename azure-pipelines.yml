@@ -134,11 +134,43 @@ stages:
     steps:
     - task: AzureCLI@2
       inputs:
-        azureSubscription: 'azure-sp'  # Set service connection
+        azureSubscription: 'azure-sp'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          psql "host=$(postgresServerName).postgres.database.azure.com port=5432 dbname=$(databaseName) user=$(adminUsername)@$(postgresServerName) password=$(adminPassword) sslmode=require" -f db/schema.sql
+          set -e
+          
+          # Get the current public IP of the pipeline agent
+          AGENT_IP=$(curl -s https://api.ipify.org)
+          echo "Pipeline agent IP: $AGENT_IP"
+          
+          # Add firewall rule for the pipeline agent if it doesn't exist
+          RULE_NAME="AllowPipelineAgent"
+          echo "Adding firewall rule for pipeline agent..."
+          az postgres flexible-server firewall-rule create \
+            --resource-group $(resourceGroupName) \
+            --name $(postgresServerName) \
+            --rule-name $RULE_NAME \
+            --start-ip-address $AGENT_IP \
+            --end-ip-address $AGENT_IP 2>/dev/null || echo "Firewall rule already exists or could not be created"
+          
+          # Wait a moment for firewall rule to take effect
+          sleep 5
+          
+          # Test connection before running schema
+          echo "Testing PostgreSQL connection..."
+          PGPASSWORD="$(adminPassword)" psql -h $(postgresServerName).postgres.database.azure.com \
+            -U $(adminUsername)@$(postgresServerName) \
+            -d postgres \
+            -c "SELECT version();" || (echo "Connection test failed" && exit 1)
+          
+          echo "Connection successful, applying schema..."
+          # Apply the schema
+          PGPASSWORD="$(adminPassword)" psql -h $(postgresServerName).postgres.database.azure.com \
+            -U $(adminUsername)@$(postgresServerName) \
+            -d $(databaseName) \
+            -f db/schema.sql
+      displayName: 'Setup PostgreSQL Database'
 
 - stage: WebApp
   dependsOn: Database

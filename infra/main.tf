@@ -29,6 +29,7 @@ resource "azurerm_postgresql_flexible_server" "postgres" {
   administrator_login          = var.admin_username
   administrator_password = var.admin_password
   version                      = "15"
+  zone                 = "1"
 }
 
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
