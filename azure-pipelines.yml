@@ -6,7 +6,7 @@ pool:
 variables:
   webAppName: 'webapp-$(Build.BuildId)'
   resourceGroupName: 'techish-webapp-rg'
-  location: 'East US'
+  location: 'centralindia'
   postgresServerName: 'webapp-postgres'
   databaseName: 'webappdb'
   adminUsername: $(DBuser)
@@ -68,6 +68,11 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: 'infra'
+        backendServiceArm: 'azure-sp'
+        backendAzureRmResourceGroupName: 'techish-webapp-rg'
+        backendAzureRmStorageAccountName: 'techish-tf-storage'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'techishprod.tfstate'
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'
