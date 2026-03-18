@@ -58,8 +58,38 @@ stages:
         fi
       displayName: 'Check and Install Terraform'
 
-- stage: Infrastructure
+- stage: TerraformBackend
   dependsOn: Setup
+  jobs:
+  - job: CreateBackend
+    displayName: 'Create Terraform Backend Infrastructure'
+    steps:
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: 'infra/bootstrap'
+        environmentServiceNameAzureRM: 'azure-sp'
+      displayName: 'Initialize Bootstrap Terraform'
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: 'infra/bootstrap'
+        environmentServiceNameAzureRM: 'azure-sp'
+        commandOptions: '-input=false -out=tfplan'
+      displayName: 'Plan Backend Infrastructure'
+    - task: TerraformTaskV2@2
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: 'infra/bootstrap'
+        environmentServiceNameAzureRM: 'azure-sp'
+        commandOptions: '-input=false -auto-approve tfplan'
+      displayName: 'Apply Backend Infrastructure'
+
+- stage: Infrastructure
+  dependsOn: TerraformBackend
   jobs:
   - job: DeployInfra
     steps:
