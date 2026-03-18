@@ -9,7 +9,7 @@ variables:
   location: 'centralindia'
   postgresServerName: 'webapp-postgres'
   databaseName: 'webappdb'
-  adminUsername: $(DBuser)
+  adminUsername: '$(DBuser)'
   adminPassword: '$(DBpass)'  # Set in pipeline variables
 
 stages:
