@@ -70,7 +70,7 @@ stages:
         workingDirectory: 'infra'
         backendServiceArm: 'azure-sp'
         backendAzureRmResourceGroupName: 'techish-webapp-rg'
-        backendAzureRmStorageAccountName: 'techish-tf-storage'
+        backendAzureRmStorageAccountName: 'techishtfstorage'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'techishprod.tfstate'
     - task: TerraformTaskV2@2
