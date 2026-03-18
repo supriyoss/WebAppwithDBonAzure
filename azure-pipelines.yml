@@ -69,6 +69,7 @@ stages:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: 'infra/bootstrap'
+        backendServiceArm: 'azure-sp'
         environmentServiceNameAzureRM: 'azure-sp'
       displayName: 'Initialize Bootstrap Terraform'
     - task: TerraformTaskV2@2
