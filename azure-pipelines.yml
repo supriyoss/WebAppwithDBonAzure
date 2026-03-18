@@ -58,42 +58,49 @@ stages:
         fi
       displayName: 'Check and Install Terraform'
 
-- stage: TerraformBackend
-  dependsOn: Setup
-  jobs:
-  - job: CreateBackend
-    displayName: 'Create Terraform Backend Infrastructure'
-    steps:
-    - task: TerraformTaskV2@2
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: 'infra/bootstrap'
-        backendServiceArm: 'azure-sp'
-        environmentServiceNameAzureRM: 'azure-sp'
-      displayName: 'Initialize Bootstrap Terraform'
-    - task: TerraformTaskV2@2
-      inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: 'infra/bootstrap'
-        environmentServiceNameAzureRM: 'azure-sp'
-        commandOptions: '-input=false -out=tfplan'
-      displayName: 'Plan Backend Infrastructure'
-    - task: TerraformTaskV2@2
-      inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: 'infra/bootstrap'
-        environmentServiceNameAzureRM: 'azure-sp'
-        commandOptions: '-input=false -auto-approve tfplan'
-      displayName: 'Apply Backend Infrastructure'
-
 - stage: Infrastructure
-  dependsOn: TerraformBackend
+  dependsOn: Setup
   jobs:
   - job: DeployInfra
     steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'azure-sp'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          set -e
+          RESOURCE_GROUP='techish-webapp-rg'
+          STORAGE_ACCOUNT='techishtfstorage'
+          CONTAINER_NAME='tfstate'
+          
+          # Check if resource group exists, create if not
+          if ! az group exists --name $RESOURCE_GROUP | grep -q true; then
+            echo "Creating resource group: $RESOURCE_GROUP"
+            az group create --name $RESOURCE_GROUP --location centralindia
+          else
+            echo "Resource group $RESOURCE_GROUP already exists"
+          fi
+          
+          # Check if storage account exists, create if not
+          if ! az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP 2>/dev/null; then
+            echo "Creating storage account: $STORAGE_ACCOUNT"
+            az storage account create --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --location centralindia --sku Standard_LRS
+          else
+            echo "Storage account $STORAGE_ACCOUNT already exists"
+          fi
+          
+          # Get storage account key
+          STORAGE_KEY=$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query '[0].value' -o tsv)
+          
+          # Check if container exists, create if not
+          if ! az storage container exists --name $CONTAINER_NAME --account-name $STORAGE_ACCOUNT --account-key $STORAGE_KEY | grep -q '"exists": true'; then
+            echo "Creating storage container: $CONTAINER_NAME"
+            az storage container create --name $CONTAINER_NAME --account-name $STORAGE_ACCOUNT --account-key $STORAGE_KEY
+          else
+            echo "Storage container $CONTAINER_NAME already exists"
+          fi
+      displayName: 'Check and Create Terraform Backend'
     - task: TerraformTaskV2@2
       inputs:
         provider: 'azurerm'

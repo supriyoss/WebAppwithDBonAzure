@@ -17,7 +17,6 @@ This project demonstrates a complete CI/CD pipeline for deploying a Node.js web 
 ├── webapp/                # Node.js Express application
 ├── db/                   # Database schema
 ├── infra/                # Terraform infrastructure code
-│   ├── bootstrap/        # Bootstrap configuration for Terraform backend
 │   ├── main.tf           # Main infrastructure definitions
 │   ├── variables.tf      # Infrastructure variables
 │   ├── outputs.tf        # Infrastructure outputs
@@ -110,29 +109,28 @@ Assign the following roles to your service principal (`azure-sp`):
    - `Contributor` - For resource management
 
 #### Terraform Backend Storage
-The Terraform backend is automatically provisioned by the pipeline using a bootstrap configuration:
+The Terraform backend is automatically created by the pipeline at runtime:
 - Resource Group: `techish-webapp-rg`
 - Storage Account: `techishtfstorage`
 - Container: `tfstate`
 
-The bootstrap Terraform configuration in `infra/bootstrap/` creates these resources automatically during the pipeline's first run.
+The pipeline will check if these resources exist and create them if needed using Azure CLI commands before initializing Terraform.
 
 ### 4. Pipeline Stages
 
-The pipeline consists of 6 stages:
+The pipeline consists of 5 stages:
 
 1. **Setup**: Install required utilities (Node.js, Azure CLI, PostgreSQL client, Terraform)
-2. **TerraformBackend**: Create Terraform backend infrastructure (resource group, storage account, container)
-   - Uses bootstrap Terraform configuration from `infra/bootstrap/`
-   - Only runs if backend resources don't already exist (idempotent)
-3. **Infrastructure**: Deploy Azure resources using Terraform
-   - Uses remote state stored in the backend created in stage 2
-4. **Database**: Create database schema using PostgreSQL client
-5. **WebApp**: Build, test, analyze code, and deploy application
+2. **Infrastructure**: Create Terraform backend if needed, then deploy Azure resources using Terraform
+   - Checks and creates resource group, storage account, and container for Terraform state
+   - Initializes Terraform with remote backend
+   - Plans and applies infrastructure changes
+3. **Database**: Create database schema using PostgreSQL client
+4. **WebApp**: Build, test, analyze code, and deploy application
    - Runs unit tests with Jest
    - Analyzes code quality with SonarCloud
    - Deploys to Azure Web App
-6. **Selenium**: Run UI tests against deployed application
+5. **Selenium**: Run UI tests against deployed application
 
 ## Deployment
 
@@ -205,13 +203,7 @@ The pipeline automatically deploys when:
 # Check Azure CLI login
 az account show
 
-# Test Terraform Backend Bootstrap
-cd infra/bootstrap
-terraform init
-terraform plan
-terraform apply
-
-# Test Main Infrastructure Terraform
+# Test Terraform (backend will be created automatically by pipeline)
 cd infra
 terraform init -backend-config="resource_group_name=techish-webapp-rg" \
                  -backend-config="storage_account_name=techishtfstorage" \
