@@ -152,12 +152,20 @@ stages:
           # Add firewall rule for the pipeline agent if it doesn't exist
           RULE_NAME="AllowPipelineAgent"
           echo "Adding firewall rule for pipeline agent on port 5432..."
+          echo "Agent IP: $AGENT_IP"
           az postgres flexible-server firewall-rule create \
             --resource-group $(resourceGroupName) \
             --server-name $(postgresServerName) \
             --name $RULE_NAME \
             --start-ip-address $AGENT_IP \
-            --end-ip-address $AGENT_IP 2>/dev/null || echo "Firewall rule already exists or could not be created"
+            --end-ip-address $AGENT_IP || echo "Firewall rule creation may have failed - checking if it exists..."
+          
+          # Verify the firewall rule was created
+          echo "Verifying firewall rule..."
+          az postgres flexible-server firewall-rule show \
+            --resource-group $(resourceGroupName) \
+            --server-name $(postgresServerName) \
+            --name $RULE_NAME || echo "Warning: Could not verify firewall rule"
           
           echo "Firewall rule created/verified for port 5432"
           
@@ -197,6 +205,7 @@ stages:
             if PGPASSWORD="$(DBpass)" psql -h $(postgresServerName).postgres.database.azure.com \
               -U $(DBuser)@$(postgresServerName) \
               -d postgres \
+              -sslmode require \
               -c "SELECT version();" -v ON_ERROR_STOP=1; then
               echo "Connection successful!"
               break
@@ -218,6 +227,7 @@ stages:
           PGPASSWORD="$(DBpass)" psql -h $(postgresServerName).postgres.database.azure.com \
             -U $(DBuser)@$(postgresServerName) \
             -d $(databaseName) \
+            -sslmode require \
             -f db/schema.sql
       displayName: 'Setup PostgreSQL Database'
 
