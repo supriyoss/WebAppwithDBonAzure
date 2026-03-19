@@ -117,7 +117,7 @@ stages:
         command: 'plan'
         workingDirectory: 'infra'
         environmentServiceNameAzureRM: 'azure-sp'
-        commandOptions: '-input=false -var="admin_username=$(DBuser)" -var="admin_password=$(DBpass)"'
+        commandOptions: '-input=false -var="admin_username=$(DBuser)" -var="admin_password=$(DBPASS)"'
         runAzLogin: true
     - task: TerraformTaskV2@2
       inputs:
@@ -125,7 +125,7 @@ stages:
         command: 'apply'
         workingDirectory: 'infra'
         environmentServiceNameAzureRM: 'azure-sp'
-        commandOptions: '-input=false -var="admin_username=$(DBuser)" -var="admin_password=$(DBpass)"'
+        commandOptions: '-input=false -var="admin_username=$(DBuser)" -var="admin_password=$(DBPASS)"'
     - script: |
         echo "Waiting for PostgreSQL server to be fully provisioned..."
         sleep 10
@@ -151,7 +151,7 @@ stages:
               CONN_RETRIES=5
               CONN_COUNT=0
               DB_USER="$(DBuser)"
-              DB_PASS="$(DBpass)"
+              DB_PASS="$(DBPASS)"
               DB_HOST="$(postgresServerName).postgres.database.azure.com"
               DB_NAME="$(databaseName)"
 
@@ -252,7 +252,7 @@ stages:
         package: '$(Build.ArtifactStagingDirectory)/webapp.zip'
         runtimeStack: 'NODE|18-lts'
         appSettings: |
-          DATABASE_URL=postgresql://$(DBuser)@$(postgresServerName):$(DBpass)@$(postgresServerName).postgres.database.azure.com:5432/$(databaseName)?sslmode=require
+          DATABASE_URL=postgresql://$(DBuser)@$(postgresServerName):$(DBPASS)@$(postgresServerName).postgres.database.azure.com:5432/$(databaseName)?sslmode=require
       condition: eq(variables['SonarCloudQualityGatePassed'], 'True')
       displayName: 'Deploy to Azure Web App'
 
