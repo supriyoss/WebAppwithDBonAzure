@@ -234,8 +234,12 @@ stages:
         replaceExistingArchive: true
       displayName: 'Archive WebApp'
     - task: SonarCloudAnalyze@4
+      inputs:
+        projectKey: $(sonarProjectKey)
       displayName: 'Run SonarCloud analysis'
     - task: SonarCloudPublish@4
+      inputs:
+        projectKey: $(sonarProjectKey)
       displayName: 'Publish Quality Gate Result'
     - task: PublishBuildArtifacts@1
       inputs:
