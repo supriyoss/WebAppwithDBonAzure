@@ -5,7 +5,7 @@ output "database_server_fqdn" {
 
 output "database_name" {
   description = "The name of the database"
-  value       = azurerm_postgresql_flexible_server.postgres.database.name
+  value       = azurerm_postgresql_flexible_server_database.db.name
   depends_on  = [azurerm_postgresql_flexible_server_database.db]
 }
 
