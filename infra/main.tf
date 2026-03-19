@@ -30,19 +30,29 @@ resource "azurerm_postgresql_flexible_server" "postgres" {
   administrator_password = var.admin_password
   version                      = "15"
   zone                 = "1"
+  
+  # Ensure the server is fully provisioned before proceeding
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
+# Allow connections from Azure services
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
-  name      = "AllowAzureServices"
-  server_id = azurerm_postgresql_flexible_server.postgres.id
-
+  name            = "AllowAzureServices"
+  server_id       = azurerm_postgresql_flexible_server.postgres.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
 }
 
+# Create the database
 resource "azurerm_postgresql_flexible_server_database" "db" {
-  name      = var.database_name
-  server_id = azurerm_postgresql_flexible_server.postgres.id
-  charset   = "UTF8"
-  collation = "en_US.utf8"
+  name            = var.database_name
+  server_id       = azurerm_postgresql_flexible_server.postgres.id
+  charset         = "UTF8"
+  collation       = "en_US.utf8"
+  
+  depends_on = [
+    azurerm_postgresql_flexible_server_firewall_rule.allow_azure
+  ]
 }
