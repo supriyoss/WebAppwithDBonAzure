@@ -202,10 +202,9 @@ stages:
           CONN_COUNT=0
           while [ $CONN_COUNT -lt $CONN_RETRIES ]; do
             echo "Connection attempt $((CONN_COUNT + 1))/$CONN_RETRIES..."
-            if PGPASSWORD="$(DBpass)" psql -h $(postgresServerName).postgres.database.azure.com \
+            if PGPASSWORD="$(DBpass)" PGSSLMODE=require psql -h $(postgresServerName).postgres.database.azure.com \
               -U $(DBuser)@$(postgresServerName) \
               -d postgres \
-              --sslmode=require \
               -c "SELECT version();" -v ON_ERROR_STOP=1; then
               echo "Connection successful!"
               break
@@ -224,10 +223,9 @@ stages:
           
           echo "Connection successful, applying schema..."
           # Apply the schema
-          PGPASSWORD="$(DBpass)" psql -h $(postgresServerName).postgres.database.azure.com \
+          PGPASSWORD="$(DBpass)" PGSSLMODE=require psql -h $(postgresServerName).postgres.database.azure.com \
             -U $(DBuser)@$(postgresServerName) \
             -d $(databaseName) \
-            --sslmode=require \
             -f db/schema.sql
       displayName: 'Setup PostgreSQL Database'
 
