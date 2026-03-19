@@ -162,10 +162,10 @@ stages:
           
           # Verify the firewall rule was created
           echo "Verifying firewall rule..."
-          az postgres flexible-server firewall-rule show \
+          az postgres flexible-server firewall-rule list \
             --resource-group $(resourceGroupName) \
             --server-name $(postgresServerName) \
-            --name $RULE_NAME || echo "Warning: Could not verify firewall rule"
+            --query "[?name=='$RULE_NAME']" || echo "Warning: Could not verify firewall rule"
           
           echo "Firewall rule created/verified for port 5432"
           
@@ -205,7 +205,7 @@ stages:
             if PGPASSWORD="$(DBpass)" psql -h $(postgresServerName).postgres.database.azure.com \
               -U $(DBuser)@$(postgresServerName) \
               -d postgres \
-              -sslmode require \
+              --sslmode=require \
               -c "SELECT version();" -v ON_ERROR_STOP=1; then
               echo "Connection successful!"
               break
@@ -227,7 +227,7 @@ stages:
           PGPASSWORD="$(DBpass)" psql -h $(postgresServerName).postgres.database.azure.com \
             -U $(DBuser)@$(postgresServerName) \
             -d $(databaseName) \
-            -sslmode require \
+            --sslmode=require \
             -f db/schema.sql
       displayName: 'Setup PostgreSQL Database'
 
