@@ -164,12 +164,6 @@ stages:
             exit 1
           fi
           
-          # Test connection before running schema
-          echo "Testing PostgreSQL connection..."
-          echo "Using username: $(DBuser)"
-          echo "Using server: $(postgresServerName).postgres.database.azure.com"
-          echo "Using database: $(databaseName)"
-          
           # Test connection with retry logic
           CONN_RETRIES=5
           CONN_COUNT=0
@@ -185,15 +179,15 @@ stages:
           echo "  Password first char: ${DB_PASS:0:1}"
           echo "  Host: $DB_HOST"
           echo "  Database: $DB_NAME"
-          echo "  Full user string: $DB_USER@$(postgresServerName)"
+          echo "  Full user string: $DB_USER@$DB_HOST"
           
           while [ $CONN_COUNT -lt $CONN_RETRIES ]; do
             echo "Connection attempt $((CONN_COUNT + 1))/$CONN_RETRIES..."
-            echo "Connecting to: $DB_HOST as $DB_USER@$(postgresServerName)"
+            echo "Connecting to: $DB_HOST as $DB_USER@$DB_HOST"
             
             if PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
               -h "$DB_HOST" \
-              -U "$DB_USER@$(postgresServerName)" \
+              -U "$DB_USER@$DB_HOST" \
               -d postgres \
               -c "SELECT version();" -v ON_ERROR_STOP=1 2>&1; then
               echo "Connection successful!"
@@ -215,7 +209,7 @@ stages:
           # Apply the schema
           PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
             -h "$DB_HOST" \
-            -U "$DB_USER@$(postgresServerName)" \
+            -U "$DB_USER@$DB_HOST" \
             -d "$DB_NAME" \
             -f db/schema.sql
       displayName: 'Setup PostgreSQL Database'
