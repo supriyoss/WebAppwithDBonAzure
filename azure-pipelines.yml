@@ -150,16 +150,16 @@ stages:
               # Retry config
               CONN_RETRIES=5
               CONN_COUNT=0
-              DB_USER="$(DBuser)"
-              DB_PASS="$(DBPASS)"
-              DB_HOST="$(postgresServerName).postgres.database.azure.com"
-              DB_NAME="$(databaseName)"
 
-              # Debug: Show credentials info (masked password)
+              DB_USER="$DB_USER"
+              DB_PASS="$DB_PASS"
+              DB_HOST="$DB_HOST"
+              DB_NAME="$DB_NAME"
+
+              # Debug (safe)
               echo "Debugging connection info:"
               echo "  Username: $DB_USER"
               echo "  Password length: ${#DB_PASS}"
-              echo "  Password first char: ${DB_PASS:0:1}"
               echo "  Host: $DB_HOST"
               echo "  Database: $DB_NAME"
 
@@ -171,6 +171,7 @@ stages:
                   -h "$DB_HOST" \
                   -U "$DB_USER" \
                   -d "$DB_NAME" \
+                  "sslmode=require" \
                   -c "SELECT 1;" -v ON_ERROR_STOP=1; then
                   
                   echo "✅ Connection successful"
@@ -185,7 +186,6 @@ stages:
                 fi
               done
 
-              # Fail if still not connected
               if [ $CONN_COUNT -eq $CONN_RETRIES ]; then
                 echo "❌ Failed to connect after $CONN_RETRIES attempts"
                 exit 1
@@ -193,14 +193,20 @@ stages:
 
               echo "Applying schema..."
 
-              # Apply schema
-              PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
+              PGPASSWORD="$DB_PASS" psql \
                 -h "$DB_HOST" \
                 -U "$DB_USER" \
                 -d "$DB_NAME" \
+                "sslmode=require" \
                 -f db/schema.sql
 
               echo "✅ Database setup completed"
+
+          env:
+            DB_USER: $(DBuser)
+            DB_PASS: $(DBpass)
+            DB_HOST: $(postgresServerName).postgres.database.azure.com
+            DB_NAME: $(databaseName)
 
 - stage: WebApp
   dependsOn: Database
