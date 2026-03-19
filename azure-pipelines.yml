@@ -156,13 +156,6 @@ stages:
               DB_HOST="$DB_HOST"
               DB_NAME="$DB_NAME"
 
-              # Debug (safe)
-              echo "Debugging connection info:"
-              echo "  Username: $DB_USER"
-              echo "  Password length: ${#DB_PASS}"
-              echo "  Host: $DB_HOST"
-              echo "  Database: $DB_NAME"
-
               # Retry loop
               while [ $CONN_COUNT -lt $CONN_RETRIES ]; do
                 echo "Attempt $((CONN_COUNT + 1))/$CONN_RETRIES..."
@@ -171,7 +164,6 @@ stages:
                   -h "$DB_HOST" \
                   -U "$DB_USER" \
                   -d "$DB_NAME" \
-                  "sslmode=require" \
                   -c "SELECT 1;" -v ON_ERROR_STOP=1; then
                   
                   echo "✅ Connection successful"
@@ -197,7 +189,6 @@ stages:
                 -h "$DB_HOST" \
                 -U "$DB_USER" \
                 -d "$DB_NAME" \
-                "sslmode=require" \
                 -f db/schema.sql
 
               echo "✅ Database setup completed"
@@ -218,17 +209,19 @@ stages:
     - script: node -e "console.log('##vso[task.setvariable variable=sonarProjectKey]' + require('crypto').randomUUID())"
       displayName: 'Generate Sonar Project GUID'
     - task: SonarCloudPrepare@4
+      displayName: 'Prepare SonarCloud analysis'
       inputs:
         SonarCloud: 'sonar-connection'
         organization: 'techishprod'
+        scannerMode: 'CLI'
         projectKey: $(sonarProjectKey)
-        projectName: 'WebApp'
+        projectName: 'webappwithdbonazure'
         extraProperties: |
           sonar.sources=webapp
           sonar.tests=webapp
           sonar.test.inclusions=**/*.test.js
           sonar.javascript.lcov.reportPaths=webapp/coverage/lcov.info
-      displayName: 'Prepare SonarCloud analysis'
+      
     - script: npm test
       workingDirectory: webapp
       displayName: 'Run Unit Tests'
