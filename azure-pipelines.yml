@@ -145,33 +145,6 @@ stages:
         inlineScript: |
           set -e
           
-          # Get the current public IP of the pipeline agent
-          AGENT_IP=$(curl -s https://api.ipify.org)
-          echo "Pipeline agent IP: $AGENT_IP"
-          
-          # Add firewall rule for the pipeline agent if it doesn't exist
-          RULE_NAME="AllowPipelineAgent"
-          echo "Adding firewall rule for pipeline agent on port 5432..."
-          echo "Agent IP: $AGENT_IP"
-          az postgres flexible-server firewall-rule create \
-            --resource-group $(resourceGroupName) \
-            --server-name $(postgresServerName) \
-            --name $RULE_NAME \
-            --start-ip-address $AGENT_IP \
-            --end-ip-address $AGENT_IP || echo "Firewall rule creation may have failed - checking if it exists..."
-          
-          # Verify the firewall rule was created
-          echo "Verifying firewall rule..."
-          az postgres flexible-server firewall-rule list \
-            --resource-group $(resourceGroupName) \
-            --server-name $(postgresServerName) \
-            --query "[?name=='$RULE_NAME']" || echo "Warning: Could not verify firewall rule"
-          
-          echo "Firewall rule created/verified for port 5432"
-          
-          # Wait for firewall rule to take effect
-          sleep 5
-          
           # Wait for PostgreSQL server to be ready
           echo "Waiting for PostgreSQL server to become ready..."
           MAX_RETRIES=30
@@ -200,12 +173,29 @@ stages:
           # Test connection with retry logic
           CONN_RETRIES=5
           CONN_COUNT=0
+          DB_USER="$(DBuser)"
+          DB_PASS="$(DBpass)"
+          DB_HOST="$(postgresServerName).postgres.database.azure.com"
+          DB_NAME="$(databaseName)"
+          
+          # Debug: Show credentials info (masked password)
+          echo "Debugging connection info:"
+          echo "  Username: $DB_USER"
+          echo "  Password length: ${#DB_PASS}"
+          echo "  Password first char: ${DB_PASS:0:1}"
+          echo "  Host: $DB_HOST"
+          echo "  Database: $DB_NAME"
+          echo "  Full user string: $DB_USER@$(postgresServerName)"
+          
           while [ $CONN_COUNT -lt $CONN_RETRIES ]; do
             echo "Connection attempt $((CONN_COUNT + 1))/$CONN_RETRIES..."
-            if PGPASSWORD="$(DBpass)" PGSSLMODE=require psql -h $(postgresServerName).postgres.database.azure.com \
-              -U $(DBuser)@$(postgresServerName) \
+            echo "Connecting to: $DB_HOST as $DB_USER@$(postgresServerName)"
+            
+            if PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
+              -h "$DB_HOST" \
+              -U "$DB_USER@$(postgresServerName)" \
               -d postgres \
-              -c "SELECT version();" -v ON_ERROR_STOP=1; then
+              -c "SELECT version();" -v ON_ERROR_STOP=1 2>&1; then
               echo "Connection successful!"
               break
             fi
@@ -223,9 +213,10 @@ stages:
           
           echo "Connection successful, applying schema..."
           # Apply the schema
-          PGPASSWORD="$(DBpass)" PGSSLMODE=require psql -h $(postgresServerName).postgres.database.azure.com \
-            -U $(DBuser)@$(postgresServerName) \
-            -d $(databaseName) \
+          PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
+            -h "$DB_HOST" \
+            -U "$DB_USER@$(postgresServerName)" \
+            -d "$DB_NAME" \
             -f db/schema.sql
       displayName: 'Setup PostgreSQL Database'
 
