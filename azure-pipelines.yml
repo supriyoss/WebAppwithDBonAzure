@@ -162,13 +162,12 @@ stages:
               echo "  Password first char: ${DB_PASS:0:1}"
               echo "  Host: $DB_HOST"
               echo "  Database: $DB_NAME"
-              echo "  Full user string: $DB_USER@$DB_HOST"
 
               # Retry loop
               while [ $CONN_COUNT -lt $CONN_RETRIES ]; do
                 echo "Attempt $((CONN_COUNT + 1))/$CONN_RETRIES..."
 
-                if PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
+                if PGPASSWORD="$DB_PASS" psql \
                   -h "$DB_HOST" \
                   -U "$DB_USER" \
                   -d "$DB_NAME" \
