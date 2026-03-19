@@ -155,18 +155,14 @@ stages:
               DB_HOST="$(postgresServerName).postgres.database.azure.com"
               DB_NAME="$(databaseName)"
 
-              DB_USER_FULL="${DB_USER}@$(postgresServerName)"
-
-              echo "Connecting to: $DB_HOST as $DB_USER_FULL"
-
               # Retry loop
               while [ $CONN_COUNT -lt $CONN_RETRIES ]; do
                 echo "Attempt $((CONN_COUNT + 1))/$CONN_RETRIES..."
 
                 if PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
                   -h "$DB_HOST" \
-                  -U "$DB_USER_FULL" \
-                  -d postgres \
+                  -U "$DB_USER" \
+                  -d "$DB_NAME" \
                   -c "SELECT 1;" -v ON_ERROR_STOP=1; then
                   
                   echo "✅ Connection successful"
@@ -192,7 +188,7 @@ stages:
               # Apply schema
               PGPASSWORD="$DB_PASS" PGSSLMODE=require psql \
                 -h "$DB_HOST" \
-                -U "$DB_USER_FULL" \
+                -U "$DB_USER" \
                 -d "$DB_NAME" \
                 -f db/schema.sql
 
