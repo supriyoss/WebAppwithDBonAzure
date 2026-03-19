@@ -20,7 +20,7 @@ stages:
     steps:
     - script: sudo apt-get update
       displayName: 'Update package list'
-    - script: sudo apt-get install -y curl gnupg wget software-properties-common
+    - script: sudo apt-get install -y curl gnupg zip wget software-properties-common
       displayName: 'Install basic utilities'
     - script: |
         if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
@@ -231,6 +231,7 @@ stages:
         includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/webapp.zip'
+        replaceExistingArchive: true
       displayName: 'Archive WebApp'
     - task: SonarCloudAnalyze@4
       displayName: 'Run SonarCloud analysis'
