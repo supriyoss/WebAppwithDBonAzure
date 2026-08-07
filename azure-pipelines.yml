@@ -1,7 +1,8 @@
 trigger: none
 
 pool:
-  name: 'Default'
+  name: MyAgentpool
+  demand: Agent.Name -equals adoAgent1
 
 variables:
   webAppName: 'webapp-$(Build.BuildId)'
